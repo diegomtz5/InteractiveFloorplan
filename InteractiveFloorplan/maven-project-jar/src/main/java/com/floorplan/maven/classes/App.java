@@ -143,7 +143,7 @@ public class App extends JFrame {
                             break;
                         case TRIANGLE:
                             shapes.add(new Triangle(e.getX(), e.getY(), 0)); // Start a new circle
-                            break;
+                            break;  
                         default:
                             break;
                     }
