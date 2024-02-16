@@ -80,10 +80,7 @@ public class App extends JFrame {
         // Add more buttons for other elements like doors, windows, furniture, etc.
         return palette;
     }
-    enum ElementType {
-        WALL, DOOR, WINDOW, FURNITURE, DELETE, CIRCLE, SMALL_WALL, MEDIUM_WALL, LARGE_WALL, VERTICAL_SMALL_WALL, VERTICAL_MEDIUM_WALL, VERTICAL_LARGE_WALL, SELECTOR, TRIANGLE // Added SELECTOR for the selection tool
-    }
-
+ 
 
 
 
@@ -250,116 +247,9 @@ public class App extends JFrame {
             }
         }
 
-        class Wall implements Shape {
-            int x1, y1, x2, y2, thickness;
-            public boolean contains(Point p) {
-                // This method checks if a point is near the wall line. You might use Line2D's ptSegDist method.
-                return Line2D.ptSegDist(x1, y1, x2, y2, p.x, p.y) < 10.0; // Consider a wall selected if the click is within 10 pixels
-            }
-            public Wall(int x1, int y1, int x2, int y2, int thickness) {
-                this.x1 = x1;
-                this.y1 = y1;
-                this.x2 = x2;
-                this.y2 = y2;
-                this.thickness = thickness;
-            }
+  
 
-            public void draw(Graphics2D g2d) {
-                g2d.setStroke(new BasicStroke(thickness, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                g2d.drawLine(x1, y1, x2, y2);
-            }
-            public void moveTo(int x, int y) {
-                int dx = x - x1;
-                int dy = y - y1;
-                x1 += dx;
-                y1 += dy;
-                x2 += dx;
-                y2 += dy;
-            }
-            public Rectangle getBounds() {
-                int xMin = Math.min(x1, x2);
-                int xMax = Math.max(x1, x2);
-                int yMin = Math.min(y1, y2);
-                int yMax = Math.max(y1, y2);
-                // Adjusting for thickness
-                int extra = thickness / 2;
-                return new Rectangle(xMin - extra, yMin - extra, (xMax - xMin) + thickness, (yMax - yMin) + thickness);
-            }
-
-        }
-
-        class Circle implements Shape {
-            int x, y, radius;
-
-            public Circle(int x, int y, int radius) {
-                this.x = x;
-                this.y = y;
-                this.radius = radius;
-            }
-
-            public void setRadius(int radius) {
-                this.radius = radius;
-            }
-
-            public void draw(Graphics2D g2d) {
-                // Save the current stroke
-                Stroke originalStroke = g2d.getStroke();
-
-                // Set the stroke for the circle to be thin
-                g2d.setStroke(new BasicStroke(1)); // Set the thickness for the circle
-
-                // Draw the circle
-                g2d.drawOval(x - radius, y - radius, 2 * radius, 2 * radius);
-
-                // Restore the original stroke so that other shapes are not affected
-                g2d.setStroke(originalStroke);
-            }
-            public boolean contains(Point p) {
-                double dist = Math.sqrt(Math.pow(x - p.x, 2) + Math.pow(y - p.y, 2));
-                return dist <= radius;
-            }
-
-            public void moveTo(int x, int y) {
-                this.x = x;
-                this.y = y;
-            }
-            public Rectangle getBounds() {
-                return new Rectangle(x - radius, y - radius, 2 * radius, 2 * radius);
-            }
-
-
-        }
-        class Triangle implements Shape {
-            int x, y; // Center point
-            int side; // Length of each side
-
-            public Triangle(int x, int y, int side) {
-                this.x = x;
-                this.y = y;
-                this.side = side;
-            }
-
-            public void draw(Graphics2D g2d) {
-                int height = (int) (Math.sqrt(3) / 2 * side);
-                int[] xPoints = {x - side / 2, x + side / 2, x};
-                int[] yPoints = {y + height / 2, y + height / 2, y - height / 2};
-                g2d.drawPolygon(xPoints, yPoints, 3);
-            }
-
-            public boolean contains(Point p) {
-                // This is a simplified version. Accurate triangle containment is more complex and depends on the triangle type.
-                return new java.awt.Polygon(new int[]{x - side / 2, x + side / 2, x}, new int[]{y + side / 2, y + side / 2, y - side / 2}, 3).contains(p);
-            }
-
-            public void moveTo(int dx, int dy) {
-                x += dx;
-                y += dy;
-            }
-
-            public Rectangle getBounds() {
-                int height = (int) (Math.sqrt(3) / 2 * side);
-                return new Rectangle(x - side / 2, y - height / 2, side, height);
-            }
-        }
+  
+        
     }
 }
