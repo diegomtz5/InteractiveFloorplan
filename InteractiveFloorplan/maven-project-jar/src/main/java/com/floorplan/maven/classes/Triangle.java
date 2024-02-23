@@ -20,7 +20,9 @@ class Triangle implements Shape {
         int[] yPoints = {y + height / 2, y + height / 2, y - height / 2};
         g2d.drawPolygon(xPoints, yPoints, 3);
     }
-
+    public void setSide(int side) {
+        this.side = side;
+    }
     public boolean contains(Point p) {
         // This is a simplified version. Accurate triangle containment is more complex and depends on the triangle type.
         return new java.awt.Polygon(new int[]{x - side / 2, x + side / 2, x}, new int[]{y + side / 2, y + side / 2, y - side / 2}, 3).contains(p);

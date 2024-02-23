@@ -74,16 +74,12 @@ public class App extends JFrame {
         selectorButton.addActionListener(e -> currentElement = ElementType.SELECTOR);
         palette.add(selectorButton);
         JButton triangleButton = new JButton("Triangle");
-        triangleButton.addActionListener(e -> currentElement = ElementType.SELECTOR);
+        triangleButton.addActionListener(e -> currentElement = ElementType.TRIANGLE);
         palette.add(triangleButton);
 
         // Add more buttons for other elements like doors, windows, furniture, etc.
         return palette;
     }
- 
-
-
-
     class DrawingArea extends JPanel {
         private List<Shape> shapes = new ArrayList<>();
         private Point startPoint = null;
@@ -154,6 +150,8 @@ public class App extends JFrame {
                     if (currentElement == ElementType.DELETE && selectionRect != null) {
                         shapes.removeIf(shape -> shape instanceof Wall && selectionRect.intersectsLine(((Wall) shape).x1, ((Wall) shape).y1, ((Wall) shape).x2, ((Wall) shape).y2));
                         shapes.removeIf(shape -> shape instanceof Circle && selectionRect.contains(((Circle) shape).x, ((Circle) shape).y));
+                        shapes.removeIf(shape -> shape instanceof Triangle && selectionRect.contains(((Triangle) shape).x, ((Triangle) shape).y));
+
                         selectionRect = null;
                         repaint();
                     }
@@ -164,6 +162,7 @@ public class App extends JFrame {
             addMouseMotionListener(new MouseMotionAdapter() {
                 @Override
                 public void mouseDragged(MouseEvent e) {
+               
                     if (currentElement == ElementType.DELETE && selectionRect != null) {
                         int x = Math.min(startPoint.x, e.getX());
                         int y = Math.min(startPoint.y, e.getY());
@@ -183,8 +182,10 @@ public class App extends JFrame {
                     }
                     else if (currentElement == ElementType.TRIANGLE && startPoint != null) {
                         Triangle lastTriangle = (Triangle) shapes.get(shapes.size() - 1);
-                        lastTriangle.x = e.getX();
-                        lastTriangle.y = e.getY();
+                        // Calculate the distance from the start point to the current point
+                        int newSideLength = (int) startPoint.distance(e.getPoint());
+                        // Update the side length of the triangle
+                        lastTriangle.setSide(newSideLength);
                         repaint();
                     }
                     if (currentElement == ElementType.SELECTOR && selectedShape != null && dragOffset != null) {
@@ -206,12 +207,15 @@ public class App extends JFrame {
                         lastWall.y2 = e.getY();
                         repaint();
                     }
-                    else if (currentElement == ElementType.TRIANGLE && startPoint != null) {
+                    if (currentElement == ElementType.TRIANGLE && startPoint != null) {
                         Triangle lastTriangle = (Triangle) shapes.get(shapes.size() - 1);
-                        lastTriangle.x = e.getX();
-                        lastTriangle.y = e.getY();
+                        // Calculate the distance from the start point to the current point
+                        int newSideLength = (int) startPoint.distance(e.getPoint());
+                        // Update the side length of the triangle
+                        lastTriangle.setSide(newSideLength);
                         repaint();
                     }
+              
                     
                     // Additional code for other element types if necessary
                 }
@@ -239,6 +243,9 @@ public class App extends JFrame {
                 } else if (shape instanceof Circle) {
                     ((Circle) shape).draw(g2d);
                 }
+                if (shape instanceof Triangle) {
+                    ((Triangle) shape).draw(g2d);
+                }
             }
 
             if (selectionRect != null) {
@@ -246,10 +253,6 @@ public class App extends JFrame {
                 g2d.draw(selectionRect);
             }
         }
-
-      
-
   
-        
     }
 }
