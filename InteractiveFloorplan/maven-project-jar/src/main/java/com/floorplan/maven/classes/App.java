@@ -1,5 +1,4 @@
 package com.floorplan.maven.classes;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -10,6 +9,7 @@ import java.util.List;
 public class App extends JFrame {
     private final DrawingArea drawingArea = new DrawingArea();
     private ElementType currentElement = ElementType.WALL; // Default to wall drawing mode
+    private double zoomFactor = 1.0;
 
     public App() {
         initUI();
@@ -70,9 +70,11 @@ public class App extends JFrame {
         JButton largeVerticalWallButton = new JButton("Large Vertical Wall");
         largeVerticalWallButton.addActionListener(e -> currentElement = ElementType.VERTICAL_LARGE_WALL);
         palette.add(largeVerticalWallButton);
+        
         JButton selectorButton = new JButton("Move");
         selectorButton.addActionListener(e -> currentElement = ElementType.SELECTOR);
         palette.add(selectorButton);
+        
         JButton triangleButton = new JButton("Triangle");
         triangleButton.addActionListener(e -> currentElement = ElementType.TRIANGLE);
         palette.add(triangleButton);
@@ -86,60 +88,92 @@ public class App extends JFrame {
         private Rectangle selectionRect = null;
         private Shape selectedShape = null; // Variable to hold the selected shape
         private Point dragOffset = null; // Track the offset from the initial click point
+        private double translateX = 0;
+        private double translateY = 0;
 
         public DrawingArea() {
             setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
             setBackground(Color.WHITE);
+            addMouseWheelListener(new MouseWheelListener() {
+                
+                @Override
+                public void mouseWheelMoved(MouseWheelEvent e) {
+                    double delta = 0.05f * e.getPreciseWheelRotation();
+                    double zoomFactorOld = zoomFactor;
+                    zoomFactor -= delta;
+                    zoomFactor = Math.max(zoomFactor, 0.1); // Prevent zooming too far out
+
+                    double zoomDivisor = zoomFactor / zoomFactorOld;
+
+                    int mouseX = e.getX();
+                    int mouseY = e.getY();
+
+                    // Adjust the translation based on the zoom change
+                    translateX += (mouseX - translateX) * (1 - zoomDivisor);
+                    translateY += (mouseY - translateY) * (1 - zoomDivisor);
+
+                    repaint(); // Repaint to apply the zoom and translation
+                }
+
+            });
+
 
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mousePressed(MouseEvent e) {
-                    startPoint = e.getPoint();
+                    // Adjust mouse coordinates by the current zoom factor
+                	  int x = (int) ((e.getX() - translateX) / zoomFactor);
+                	    int y = (int) ((e.getY() - translateY) / zoomFactor);
+                    startPoint = new Point(x, y);
+                    
+                    
                     System.out.println("Mouse Pressed at: " + startPoint + " with currentElement: " + currentElement); // Debugging print
 
                     if (currentElement == ElementType.SELECTOR) {
-                        // Select a shape if the selector tool is active
-                        selectedShape = findShapeAtPoint(startPoint);
+                        selectedShape = findShapeAtPoint(new Point(x, y)); // Use adjusted x, y for finding the shape
                         if (selectedShape != null) {
-                            Rectangle bounds = (Rectangle) selectedShape.getBounds();
+                            // Assume getReferencePoint() gives you the top-left point or some logical "handle" point of the shape
+                            Point refPoint = selectedShape.getReferencePoint();
 
-                            dragOffset = new Point(startPoint.x - bounds.x, startPoint.y - bounds.y);
+                            // dragOffset is the difference between where you clicked and the reference point of the shape
+                            dragOffset = new Point(x - refPoint.x, y - refPoint.y);
                         }
-                    } else {
-                    switch (currentElement) {
-                        case SMALL_WALL:
-                            shapes.add(new Wall(e.getX(), e.getY(), e.getX() + 50, e.getY(), 4)); // Example size for small wall
-                            break;
-                        case MEDIUM_WALL:
-                            shapes.add(new Wall(e.getX(), e.getY(), e.getX() + 100, e.getY(), 4)); // Example size for medium wall
-                            break;
-                        case LARGE_WALL:
-                            shapes.add(new Wall(e.getX(), e.getY(), e.getX() + 150, e.getY(), 4)); // Example size for large wall
-                            break;
-                        case WALL:
-                            shapes.add(new Wall(e.getX(), e.getY(), e.getX(), e.getY(), 4)); // Start a new resizable wall
-                            break;
-                        case CIRCLE:
-                            shapes.add(new Circle(e.getX(), e.getY(), 0)); // Start a new circle
-                            break;
-                        case DELETE:
-                            selectionRect = new Rectangle(e.getX(), e.getY(), 0, 0);
-                            break;
-                        case VERTICAL_SMALL_WALL:
-                            shapes.add(new Wall(e.getX(), e.getY(), e.getX(), e.getY() + 50, 4)); // 50 pixels high for small vertical wall
-                            break;
-                        case VERTICAL_MEDIUM_WALL:
-                            shapes.add(new Wall(e.getX(), e.getY(), e.getX(), e.getY() + 100, 4)); // 100 pixels high for medium vertical wall
-                            break;
-                        case VERTICAL_LARGE_WALL:
-                            shapes.add(new Wall(e.getX(), e.getY(), e.getX(), e.getY() + 150, 4)); // 150 pixels high for large vertical wall
-                            break;
-                        case TRIANGLE:
-                            shapes.add(new Triangle(e.getX(), e.getY(), 0)); // Start a new circle
-                            break;  
-                        default:
-                            break;
                     }
+                    	else {
+                        switch (currentElement) {
+                            case SMALL_WALL:
+                                shapes.add(new Wall(x, y, x + 50, y, 4)); // Adjusted for zoom
+                                break;
+                            case MEDIUM_WALL:
+                                shapes.add(new Wall(x, y, x + 100, y, 4)); // Adjusted for zoom
+                                break;
+                            case LARGE_WALL:
+                                shapes.add(new Wall(x, y, x + 150, y, 4)); // Adjusted for zoom
+                                break;
+                            case WALL:
+                                shapes.add(new Wall(x, y, x, y, 4)); // Adjusted for zoom, start a new resizable wall
+                                break;
+                            case CIRCLE:
+                                shapes.add(new Circle(x, y, 0)); // Adjusted for zoom, start a new circle
+                                break;
+                            case DELETE:
+                                selectionRect = new Rectangle(x, y, 0, 0); // Adjusted for zoom
+                                break;
+                            case VERTICAL_SMALL_WALL:
+                                shapes.add(new Wall(x, y, x, y + 50, 4)); // Adjusted for zoom, 50 pixels high for small vertical wall
+                                break;
+                            case VERTICAL_MEDIUM_WALL:
+                                shapes.add(new Wall(x, y, x, y + 100, 4)); // Adjusted for zoom, 100 pixels high for medium vertical wall
+                                break;
+                            case VERTICAL_LARGE_WALL:
+                                shapes.add(new Wall(x, y, x, y + 150, 4)); // Adjusted for zoom, 150 pixels high for large vertical wall
+                                break;
+                            case TRIANGLE:
+                                shapes.add(new Triangle(x, y, 0)); // Adjusted for zoom, start a new triangle
+                                break;  
+                            default:
+                                break;
+                        }
                     }
                     repaint();
                 }
@@ -162,84 +196,107 @@ public class App extends JFrame {
             addMouseMotionListener(new MouseMotionAdapter() {
                 @Override
                 public void mouseDragged(MouseEvent e) {
-               
+                    // Adjust mouse coordinates by the current zoom factor and translation for consistent usage
+                    int x = (int) ((e.getX() - translateX) / zoomFactor);
+                    int y = (int) ((e.getY() - translateY) / zoomFactor);
+
                     if (currentElement == ElementType.DELETE && selectionRect != null) {
-                        int x = Math.min(startPoint.x, e.getX());
-                        int y = Math.min(startPoint.y, e.getY());
-                        int width = Math.abs(e.getX() - startPoint.x);
-                        int height = Math.abs(e.getY() - startPoint.y);
-                        selectionRect.setBounds(x, y, width, height);
+                        // Use adjusted startPoint for consistent width and height calculation
+                        int width = Math.abs(x - startPoint.x);
+                        int height = Math.abs(y - startPoint.y);
+                        selectionRect.setBounds(startPoint.x, startPoint.y, width, height);
                         repaint();
                     } else if (currentElement == ElementType.CIRCLE && startPoint != null) {
                         Circle lastCircle = (Circle) shapes.get(shapes.size() - 1);
-                        lastCircle.setRadius((int) startPoint.distance(e.getPoint()));
+                        // Calculate the radius based on the distance between startPoint and currentPoint
+                        lastCircle.setRadius((int) startPoint.distance(x, y));
                         repaint();
                     } else if (currentElement == ElementType.WALL && startPoint != null) {
                         Wall lastWall = (Wall) shapes.get(shapes.size() - 1);
-                        lastWall.x2 = e.getX();
-                        lastWall.y2 = e.getY();
+
+                        // Adjust the mouse event coordinates for zoom and translation
+                        int adjustedX = (int) ((e.getX() - translateX) / zoomFactor);
+                        int adjustedY = (int) ((e.getY() - translateY) / zoomFactor);
+
+                        lastWall.x2 = adjustedX;
+                        lastWall.y2 = adjustedY;
                         repaint();
                     }
-                    else if (currentElement == ElementType.TRIANGLE && startPoint != null) {
-                        Triangle lastTriangle = (Triangle) shapes.get(shapes.size() - 1);
-                        // Calculate the distance from the start point to the current point
-                        int newSideLength = (int) startPoint.distance(e.getPoint());
-                        // Update the side length of the triangle
-                        lastTriangle.setSide(newSideLength);
+
+                   	else if (currentElement == ElementType.TRIANGLE && startPoint != null) {
+	 					Triangle lastTriangle = (Triangle) shapes.get(shapes.size() - 1);
+                        // Calculate the side length based on the distance between startPoint and currentPoint
+                        lastTriangle.setSide((int) startPoint.distance(x, y));
                         repaint();
                     }
+
                     if (currentElement == ElementType.SELECTOR && selectedShape != null && dragOffset != null) {
-                        // Calculate the new top-left corner of the shape based on the drag offset
-                        int newX = e.getX() - dragOffset.x;
-                        int newY = e.getY() - dragOffset.y;
+                        // First, adjust the mouse event coordinates for zoom and translation to get the "world" coordinates
+                        int mouseXAdjusted = (int) ((e.getX() - translateX) / zoomFactor);
+                        int mouseYAdjusted = (int) ((e.getY() - translateY) / zoomFactor);
 
-                        // Move the selected shape to the new location
+                        // Then, apply the dragOffset to these adjusted coordinates to get the new position for the shape
+                        int newX = mouseXAdjusted - dragOffset.x;
+                        int newY = mouseYAdjusted - dragOffset.y;
+
+                        // Move the selected shape to this new position
                         selectedShape.moveTo(newX, newY);
+                        repaint();
+                    }
 
-                        repaint(); // Repaint the panel to update the shape's position
-                    } else if (currentElement == ElementType.CIRCLE && startPoint != null) {
-                        Circle lastCircle = (Circle) shapes.get(shapes.size() - 1);
-                        lastCircle.setRadius((int) startPoint.distance(e.getPoint()));
-                        repaint();
-                    } else if (currentElement == ElementType.WALL && startPoint != null) {
-                        Wall lastWall = (Wall) shapes.get(shapes.size() - 1);
-                        lastWall.x2 = e.getX();
-                        lastWall.y2 = e.getY();
-                        repaint();
-                    }
-                    if (currentElement == ElementType.TRIANGLE && startPoint != null) {
-                        Triangle lastTriangle = (Triangle) shapes.get(shapes.size() - 1);
-                        // Calculate the distance from the start point to the current point
-                        int newSideLength = (int) startPoint.distance(e.getPoint());
-                        // Update the side length of the triangle
-                        lastTriangle.setSide(newSideLength);
-                        repaint();
-                    }
-              
-                    
-                    // Additional code for other element types if necessary
                 }
+
+
             });
 
         }
         private Shape findShapeAtPoint(Point point) {
-            for (Shape shape : shapes) {
-                if (shape instanceof Wall && ((Wall) shape).contains(point)) {
-                    return shape;
-                } else if (shape instanceof Circle && ((Circle) shape).contains(point)) {
-                    return shape;
+            for (int i = shapes.size() - 1; i >= 0; i--) { // Iterate backwards to get the topmost shape first
+                Shape shape = shapes.get(i);
+                if (shape.contains(point, zoomFactor)) {
+                    return shape; // Return the first shape that contains the point
                 }
             }
             return null; // No shape found at the point
         }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             Graphics2D g2d = (Graphics2D) g;
 
+            // Apply translation
+            g2d.translate(translateX, translateY);
+
+            // Then apply zoom
+            g2d.scale(zoomFactor, zoomFactor);
+
+            // Set the color for the grid
+            g2d.setColor(Color.LIGHT_GRAY);
+
+            // Determine the size of each cell in the grid
+            int gridSize = 25;
+
+            // Calculate the bounds of the visible area considering translation and zoom
+            int visibleLeft = (int) (-translateX / zoomFactor);
+            int visibleTop = (int) (-translateY / zoomFactor);
+            int visibleRight = (int) ((getWidth() - translateX) / zoomFactor);
+            int visibleBottom = (int) ((getHeight() - translateY) / zoomFactor);
+
+            // Draw the vertical lines of the grid over the visible area
+            for (int i = visibleLeft - (visibleLeft % gridSize); i <= visibleRight; i += gridSize) {
+                g2d.drawLine(i, visibleTop, i, visibleBottom);
+            }
+
+            // Draw the horizontal lines of the grid over the visible area
+            for (int i = visibleTop - (visibleTop % gridSize); i <= visibleBottom; i += gridSize) {
+                g2d.drawLine(visibleLeft, i, visibleRight, i);
+            }
+
+            // Now draw the shapes on top of the grid as before
             for (Shape shape : shapes) {
                 if (shape instanceof Wall) {
-                    ((Wall) shape).draw(g2d);
+                    ((Wall) shape).draw(g2d, zoomFactor );
                 } else if (shape instanceof Circle) {
                     ((Circle) shape).draw(g2d);
                 }
@@ -248,11 +305,11 @@ public class App extends JFrame {
                 }
             }
 
+            // Draw the selection rectangle if it's not null
             if (selectionRect != null) {
                 g2d.setColor(Color.BLUE);
                 g2d.draw(selectionRect);
             }
         }
-  
     }
 }
