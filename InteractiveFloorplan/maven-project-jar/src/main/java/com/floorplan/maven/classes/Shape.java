@@ -10,4 +10,5 @@ public interface Shape {
 
 	boolean contains(Point point, double zoomFactor);
 	Point getReferencePoint();
+	void rotate(double angle);
 }

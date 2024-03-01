@@ -5,11 +5,13 @@ import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 
 class Wall implements Shape {
     int x1, y1, x2, y2, thickness;
     Color color = Color.BLACK; // Default color, can be changed as needed
+    private double rotationAngle = 0; // Degrees
 
     public Wall(int x1, int y1, int x2, int y2, int thickness) {
         this.x1 = x1;
@@ -23,12 +25,32 @@ class Wall implements Shape {
         double threshold = 10.0 / zoomFactor; // Smaller threshold when zoomed in for finer selection control
         return Line2D.ptSegDist(x1, y1, x2, y2, p.x, p.y) < threshold;
     }
+	public void rotate(double angle) {
+        rotationAngle += angle;
+
+	}
 
     public void draw(Graphics2D g2d, double zoomFactor) {
+    	  // Calculate midpoint for the rotation pivot
+        int midX = (x1 + x2) / 2;
+        int midY = (y1 + y2) / 2;
+
+        // Save the current transform of the graphics context
+        AffineTransform originalTransform = g2d.getTransform();
+
+        // Rotate around the midpoint
+        g2d.rotate(Math.toRadians(rotationAngle), midX, midY);
+
+        // Set color and stroke for drawing
         int scaledThickness = (int) Math.max(1, thickness * zoomFactor); // Ensure at least 1px thickness
         g2d.setColor(color);
         g2d.setStroke(new BasicStroke(scaledThickness, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        // Draw the line representing the wall
         g2d.drawLine(x1, y1, x2, y2);
+
+        // Restore the original transform to avoid affecting subsequent drawing operations
+        g2d.setTransform(originalTransform);
     }
 
     public void moveTo(int x, int y) {

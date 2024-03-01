@@ -13,8 +13,10 @@ public class App extends JFrame {
 
     public App() {
         initUI();
-        add(createDesignPalette(), BorderLayout.WEST); // Add the design palette to the left side
+        // Replace createDesignPalette with createMainPanel to include left, right, and top components
+        add(createMainPanel());
     }
+
 
     private void initUI() {
         add(drawingArea, BorderLayout.CENTER);
@@ -30,11 +32,33 @@ public class App extends JFrame {
             app.setVisible(true);
         });
     }
+ // Main panel with BorderLayout to include left, right, and top toolbars
+    private JPanel createMainPanel() {
+        JPanel mainPanel = new JPanel(new BorderLayout());
 
+        // Left tools panel
+        JPanel leftPanel = createDesignPalette();
+        mainPanel.add(leftPanel, BorderLayout.WEST);
+
+        // Right tools panel
+        JPanel rightPanel = createRightToolsPalette();
+        mainPanel.add(rightPanel, BorderLayout.EAST);
+
+        // Top toolbar
+        JToolBar topToolBar = createTopToolBar();
+        mainPanel.add(topToolBar, BorderLayout.NORTH);
+
+        // Integrating drawingArea in the center
+        mainPanel.add(drawingArea, BorderLayout.CENTER);
+
+        return mainPanel;
+    }
+
+    // Method for left tools panel (your original method)
     private JPanel createDesignPalette() {
-        JPanel palette = new JPanel();
-        palette.setLayout(new GridLayout(0, 1)); // Single column layout
-
+        JPanel palette = new JPanel(new GridLayout(0, 1)); // Single column layout
+        // Add your buttons here...
+        // Example:
         JButton wallButton = new JButton("Wall");
         wallButton.addActionListener(e -> currentElement = ElementType.WALL);
         palette.add(wallButton);
@@ -72,16 +96,55 @@ public class App extends JFrame {
         palette.add(largeVerticalWallButton);
         
         JButton selectorButton = new JButton("Move");
-        selectorButton.addActionListener(e -> currentElement = ElementType.SELECTOR);
+        selectorButton.addActionListener(e -> currentElement = ElementType.MOVE);
         palette.add(selectorButton);
         
         JButton triangleButton = new JButton("Triangle");
         triangleButton.addActionListener(e -> currentElement = ElementType.TRIANGLE);
         palette.add(triangleButton);
-
-        // Add more buttons for other elements like doors, windows, furniture, etc.
+        // Add more buttons...
+        JButton rotateButton = new JButton("Rotate");
+        rotateButton.addActionListener(e -> currentElement = ElementType.ROTATE);
+        palette.add(rotateButton);
         return palette;
     }
+
+    // New method for right tools panel, similar to createDesignPalette
+    private JPanel createRightToolsPalette() {
+        JPanel palette = new JPanel(new GridLayout(0, 1)); // Single column layout
+        // Add buttons here...
+        // Example:
+        JButton doorButton = new JButton("Door");
+        doorButton.addActionListener(e -> currentElement = ElementType.DOOR);
+        palette.add(doorButton);
+        // Add more buttons...
+
+        return palette;
+    }
+
+    // Method for creating the top toolbar
+    private JToolBar createTopToolBar() {
+        JToolBar toolBar = new JToolBar();
+
+        // Example of adding a button to the toolbar
+        JButton saveButton = new JButton("Save");
+        saveButton.addActionListener(e -> {
+            // Action for saving the design
+        });
+        toolBar.add(saveButton);
+
+        JButton loadButton = new JButton("Load");
+        loadButton.addActionListener(e -> {
+            // Action for loading a design
+        });
+        toolBar.add(loadButton);
+
+        // Add more buttons as needed...
+
+        return toolBar;
+    }
+
+   
     class DrawingArea extends JPanel {
         private List<Shape> shapes = new ArrayList<>();
         private Point startPoint = null;
@@ -90,7 +153,7 @@ public class App extends JFrame {
         private Point dragOffset = null; // Track the offset from the initial click point
         private double translateX = 0;
         private double translateY = 0;
-
+        private Point initialClickPoint = null;
         public DrawingArea() {
             setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
             setBackground(Color.WHITE);
@@ -128,8 +191,14 @@ public class App extends JFrame {
                     
                     
                     System.out.println("Mouse Pressed at: " + startPoint + " with currentElement: " + currentElement); // Debugging print
-
-                    if (currentElement == ElementType.SELECTOR) {
+                    if (currentElement == ElementType.ROTATE) {
+                        selectedShape = findShapeAtPoint(new Point(e.getX(), e.getY()));
+                        if (selectedShape != null) {
+                            // Setup for rotation, like recording the initial click position
+                            initialClickPoint = new Point(e.getX(), e.getY());
+                        }
+                    }
+                    if (currentElement == ElementType.MOVE) {
                         selectedShape = findShapeAtPoint(new Point(x, y)); // Use adjusted x, y for finding the shape
                         if (selectedShape != null) {
                             // Assume getReferencePoint() gives you the top-left point or some logical "handle" point of the shape
@@ -199,8 +268,16 @@ public class App extends JFrame {
                     // Adjust mouse coordinates by the current zoom factor and translation for consistent usage
                     int x = (int) ((e.getX() - translateX) / zoomFactor);
                     int y = (int) ((e.getY() - translateY) / zoomFactor);
+                    if (currentElement == ElementType.ROTATE && selectedShape != null && initialClickPoint != null) {
+                        // Calculate the rotation amount based on mouse movement
+                        Point currentPoint = new Point(x, y);
+                        double rotationAmount = calculateRotationAmount(initialClickPoint, currentPoint, selectedShape.getReferencePoint());
+                        selectedShape.rotate(rotationAmount);
 
-                    if (currentElement == ElementType.DELETE && selectionRect != null) {
+                        initialClickPoint = currentPoint; // Update initial point for continuous rotation
+                        repaint();
+                    } 
+                    else if (currentElement == ElementType.DELETE && selectionRect != null) {
                         // Use adjusted startPoint for consistent width and height calculation
                         int width = Math.abs(x - startPoint.x);
                         int height = Math.abs(y - startPoint.y);
@@ -230,7 +307,7 @@ public class App extends JFrame {
                         repaint();
                     }
 
-                    if (currentElement == ElementType.SELECTOR && selectedShape != null && dragOffset != null) {
+                    if (currentElement == ElementType.MOVE && selectedShape != null && dragOffset != null) {
                         // First, adjust the mouse event coordinates for zoom and translation to get the "world" coordinates
                         int mouseXAdjusted = (int) ((e.getX() - translateX) / zoomFactor);
                         int mouseYAdjusted = (int) ((e.getY() - translateY) / zoomFactor);
@@ -312,4 +389,12 @@ public class App extends JFrame {
             }
         }
     }
+    private double calculateRotationAmount(Point initialPoint, Point currentPoint, Point shapeCenter) {
+        // Calculate angle between initial click and current point relative to shape center
+        double initialAngle = Math.atan2(initialPoint.y - shapeCenter.y, initialPoint.x - shapeCenter.x);
+        double currentAngle = Math.atan2(currentPoint.y - shapeCenter.y, currentPoint.x - shapeCenter.x);
+        // Return the change in angle in degrees
+        return Math.toDegrees(currentAngle - initialAngle);
+    }
 }
+
