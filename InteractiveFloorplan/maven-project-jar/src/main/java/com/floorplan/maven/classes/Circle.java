@@ -56,10 +56,11 @@ class Circle implements Shape {
     }
 
     public boolean contains(Point p, double zoomFactor) {
-        double threshold = radius / zoomFactor; // Use the radius adjusted by the zoom factor
-        double dist = Math.sqrt(Math.pow(x - p.x, 2) + Math.pow(y - p.y, 2));
-        return dist <= threshold;
+        // Calculate the distance from the point to the circle's center, adjusted by the zoom factor
+        double dist = Math.sqrt(Math.pow((x - p.x) / zoomFactor, 2) + Math.pow((y - p.y) / zoomFactor, 2));
+        return dist <= radius;
     }
+
 
     public Point getReferencePoint() {
         return new Point(x, y); // The center point is the logical reference for a circle
@@ -70,7 +71,26 @@ class Circle implements Shape {
         this.y = y;
     }
 
-    public Rectangle getBounds() {
-        return new Rectangle(x - radius, y - radius, 2 * radius, 2 * radius);
+    public void resize(int newX, int newY) {
+        // Calculate the distance from the new point to the circle's center
+        int newRadius = (int) Math.sqrt(Math.pow(newX - x, 2) + Math.pow(newY - y, 2));
+
+        // Update the radius
+        setRadius(newRadius);
     }
+
+    public Rectangle getBounds() {
+        // Adjust the position and size of the bounds by the zoom factor
+        int adjustedX = (int) ((x - radius));
+        int adjustedY = (int) ((y - radius));
+        int adjustedWidth = (int) (2 * radius);
+        int adjustedHeight = (int) (2 * radius);
+
+        return new Rectangle(adjustedX, adjustedY, adjustedWidth, adjustedHeight);
+    }
+ 
+    public double getRotationAngle() {
+		return rotationAngle;
+	}
+
 }

@@ -7,6 +7,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
 
 class Wall implements Shape {
     int x1, y1, x2, y2, thickness;
@@ -22,9 +23,26 @@ class Wall implements Shape {
     }
 
     public boolean contains(Point p, double zoomFactor) {
+        // Calculate the midpoint for the rotation pivot
+        int midX = (x1 + x2) / 2;
+        int midY = (y1 + y2) / 2;
+
+        // Create an AffineTransform for the inverse rotation
+        AffineTransform inverseTransform = AffineTransform.getRotateInstance(
+            -Math.toRadians(rotationAngle), midX, midY);
+
+        // Create a new Point2D from the point to be checked
+        Point2D.Double src = new Point2D.Double(p.x, p.y);
+
+        // Apply the inverse rotation to the point
+        Point2D.Double dst = new Point2D.Double();
+        inverseTransform.transform(src, dst);
+
+        // Use the transformed point for the distance check
         double threshold = 10.0 / zoomFactor; // Smaller threshold when zoomed in for finer selection control
-        return Line2D.ptSegDist(x1, y1, x2, y2, p.x, p.y) < threshold;
+        return Line2D.ptSegDist(x1, y1, x2, y2, dst.x, dst.y) < threshold;
     }
+
 	public void rotate(double angle) {
         rotationAngle += angle;
 
@@ -52,7 +70,16 @@ class Wall implements Shape {
         // Restore the original transform to avoid affecting subsequent drawing operations
         g2d.setTransform(originalTransform);
     }
+    public void resizeStartPoint(int newX, int newY) {
+        x1 = newX;
+        y1 = newY;
+    }
 
+    public void resizeEndPoint(int newX, int newY) {
+        x2 = newX;
+        y2 = newY;
+    }
+    public void resize(int x, int y) {}
     public void moveTo(int x, int y) {
         int dx = x - ((x1 + x2) / 2); // Difference from the midpoint's x to new x
         int dy = y - ((y1 + y2) / 2); // Difference from the midpoint's y to new y
@@ -61,7 +88,17 @@ class Wall implements Shape {
         x2 += dx;
         y2 += dy;
     }
-
+    public void resize(int x, int y, boolean isStartPoint) {
+        if (isStartPoint) {
+            // If the start point is being resized, update x1 and y1
+            x1 = x;
+            y1 = y;
+        } else {
+            // Otherwise, update x2 and y2
+            x2 = x;
+            y2 = y;
+        }
+    }
     public Point getReferencePoint() {
         // Return the midpoint of the wall as the reference point
         int midX = (x1 + x2) / 2;
@@ -69,7 +106,7 @@ class Wall implements Shape {
         return new Point(midX, midY);
     }
 
-    public Rectangle getBounds() {
+    public Rectangle getBounds(double zoomFactor) {
         int xMin = Math.min(x1, x2);
         int xMax = Math.max(x1, x2);
         int yMin = Math.min(y1, y2);
@@ -77,7 +114,26 @@ class Wall implements Shape {
         int extra = thickness / 2;
         return new Rectangle(xMin - extra, yMin - extra, (xMax - xMin) + thickness, (yMax - yMin) + thickness);
     }
+    public Rectangle getBounds() {
+        // Calculate the minimum and maximum coordinates, accounting for the thickness of the wall
+        int xMin = Math.min(x1, x2) - thickness / 2;
+        int xMax = Math.max(x1, x2) + thickness / 2;
+        int yMin = Math.min(y1, y2) - thickness / 2;
+        int yMax = Math.max(y1, y2) + thickness / 2;
 
+        // Apply zoom factor and translation to the coordinates
+        int adjustedXMin = (int) ((xMin ));
+        int adjustedYMin = (int) ((yMin ));
+        int adjustedWidth = (int) ((xMax - xMin) );
+        int adjustedHeight = (int) (yMax - yMin);
+
+        // Return the adjusted bounding rectangle
+        return new Rectangle(adjustedXMin, adjustedYMin, adjustedWidth, adjustedHeight);
+    }
+
+	public double getRotationAngle() {
+		return rotationAngle;
+	}
     // Methods for color, etc.
     public void setColor(Color color) {
         this.color = color;
