@@ -1,154 +1,269 @@
 package com.floorplan.maven.classes;
 import javax.swing.*;
+
+
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.Serializable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+public class App extends JFrame implements Serializable {
+    private static final long serialVersionUID = 1L; // Recommended for Serializable classes
 
-public class App extends JFrame {
     private final DrawingArea drawingArea = new DrawingArea();
     private ElementType currentElement = ElementType.WALL; // Default to wall drawing mode
     private double zoomFactor = 1.0;
-
+    private Integer thickness =  1;
     public App() {
         initUI();
         // Replace createDesignPalette with createMainPanel to include left, right, and top components
         add(createMainPanel());
     }
-
-
-    private void initUI() {
-        add(drawingArea, BorderLayout.CENTER);
-        setTitle("Interactive Floor Plan Designer");
-        setSize(800, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); // Center the window
-    }
-
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             App app = new App();
             app.setVisible(true);
         });
     }
- // Main panel with BorderLayout to include left, right, and top toolbars
+
+    private void initUI() {
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        add(createMainPanel());
+    }
+
     private JPanel createMainPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
 
-        // Left tools panel
-        JPanel leftPanel = createDesignPalette();
-        mainPanel.add(leftPanel, BorderLayout.WEST);
+        // Create a panel for the top which includes both the toolbar and the top panel
+        JPanel topContainer = new JPanel();
+        topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.PAGE_AXIS)); // Vertical box layout
 
-        // Right tools panel
-        JPanel rightPanel = createRightToolsPalette();
-        mainPanel.add(rightPanel, BorderLayout.EAST);
+    
+        JPanel topPanel = createTopPanel(); // Create the top panel
+        topContainer.add(topPanel); // Add the top panel to the top container
 
-        // Top toolbar
-        JToolBar topToolBar = createTopToolBar();
-        mainPanel.add(topToolBar, BorderLayout.NORTH);
+        mainPanel.add(topContainer, BorderLayout.NORTH); // Add the top container to the main panel at the top
 
-        // Integrating drawingArea in the center
+        // Integrating tool panels
+        mainPanel.add(createConstructionToolsPanel(), BorderLayout.WEST);
+        mainPanel.add(createFurnitureAndUtilitiesPanel(), BorderLayout.EAST);
+
         mainPanel.add(drawingArea, BorderLayout.CENTER);
 
         return mainPanel;
     }
 
-    // Method for left tools panel (your original method)
-    private JPanel createDesignPalette() {
-        JPanel palette = new JPanel(new GridLayout(0, 1)); // Single column layout
-        // Add your buttons here...
-        // Example:
-        JButton wallButton = new JButton("Wall");
-        wallButton.addActionListener(e -> currentElement = ElementType.WALL);
-        palette.add(wallButton);
+    private JPanel createConstructionToolsPanel() {
+        // Main panel with BoxLayout for vertical stacking
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 
-        JButton deleteButton = new JButton("Delete");
-        deleteButton.addActionListener(e -> currentElement = ElementType.DELETE);
-        palette.add(deleteButton);
+        // Create the construction tools section
+        JPanel constructionPanel = createSectionPanel("Construction Tools");
+        addToolButton(constructionPanel, "Room", ElementType.ROOM);
 
-        JButton circleButton = new JButton("Circle");
-        circleButton.addActionListener(e -> currentElement = ElementType.CIRCLE);
-        palette.add(circleButton);
-        
-        JButton smallWallButton = new JButton("Small Wall");
-        smallWallButton.addActionListener(e -> currentElement = ElementType.SMALL_WALL);
-        palette.add(smallWallButton);
+        addToolButton(constructionPanel, "Custom Wall", ElementType.WALL);
+        addToolButton(constructionPanel, "Horizontal Small Wall", ElementType.SMALL_WALL);
+        addToolButton(constructionPanel, "Horizontal Medium Wall", ElementType.MEDIUM_WALL);
+        addToolButton(constructionPanel, "Horizontal Large Wall", ElementType.LARGE_WALL);
+        addToolButton(constructionPanel, "Vertical Small Wall", ElementType.VERTICAL_SMALL_WALL);
+        addToolButton(constructionPanel, "Vertical Medium Wall", ElementType.VERTICAL_MEDIUM_WALL);
+        addToolButton(constructionPanel, "Vertical Large Wall", ElementType.VERTICAL_LARGE_WALL);
+        addToolButton(constructionPanel, "Horizontal Wall Opening", ElementType.OPENING);
+        addToolButton(constructionPanel, "Vertical Wall Opening", ElementType.VERTICAL_OPENING);
+        addToolButton(constructionPanel, "Custom Wall Opening", ElementType.OPENING_CUSTOM);
 
-        JButton mediumWallButton = new JButton("Medium Wall");
-        mediumWallButton.addActionListener(e -> currentElement = ElementType.MEDIUM_WALL);
-        palette.add(mediumWallButton);
+        // Add more construction tool buttons...
 
-        JButton largeWallButton = new JButton("Large Wall");
-        largeWallButton.addActionListener(e -> currentElement = ElementType.LARGE_WALL);
-        palette.add(largeWallButton);
-        
-        JButton smallVerticalWallButton = new JButton("Small Vertical Wall");
-        smallVerticalWallButton.addActionListener(e -> currentElement = ElementType.VERTICAL_SMALL_WALL);
-        palette.add(smallVerticalWallButton);
 
-        JButton mediumVerticalWallButton = new JButton("Medium Vertical Wall");
-        mediumVerticalWallButton.addActionListener(e -> currentElement = ElementType.VERTICAL_MEDIUM_WALL);
-        palette.add(mediumVerticalWallButton);
+        // Add sections to the main panel
+        mainPanel.add(constructionPanel);
+      
+        // Add more sections as needed...
 
-        JButton largeVerticalWallButton = new JButton("Large Vertical Wall");
-        largeVerticalWallButton.addActionListener(e -> currentElement = ElementType.VERTICAL_LARGE_WALL);
-        palette.add(largeVerticalWallButton);
-        
-        JButton selectorButton = new JButton("Move");
-        selectorButton.addActionListener(e -> currentElement = ElementType.MOVE);
-        palette.add(selectorButton);
-        
-        JButton triangleButton = new JButton("Triangle");
-        triangleButton.addActionListener(e -> currentElement = ElementType.TRIANGLE);
-        palette.add(triangleButton);
-        // Add more buttons...
-        JButton rotateButton = new JButton("Rotate");
-        rotateButton.addActionListener(e -> currentElement = ElementType.ROTATE);
-        palette.add(rotateButton);
-        JButton rectangleButton = new JButton("Rectangle");
-        rectangleButton.addActionListener(e -> currentElement = ElementType.RECTANGLE);
-        palette.add(rectangleButton);
-        return palette;
+        return mainPanel;
     }
 
-    // New method for right tools panel, similar to createDesignPalette
-    private JPanel createRightToolsPalette() {
-        JPanel palette = new JPanel(new GridLayout(0, 1)); // Single column layout
-        // Add buttons here...
-        // Example:
-        JButton doorButton = new JButton("Door");
-        doorButton.addActionListener(e -> currentElement = ElementType.DOOR);
-        palette.add(doorButton);
-        // Add more buttons...
+    private JPanel createSectionPanel(String title) {
+        JPanel sectionPanel = new JPanel();
+        sectionPanel.setLayout(new GridLayout(0, 1)); // Or use another layout if preferred
+        sectionPanel.setBorder(BorderFactory.createTitledBorder(title));
+        return sectionPanel;
+    }
+    private JScrollPane createFurnitureAndUtilitiesPanel() {
+        // Your ImageIcon declarations here...
+    	ImageIcon fridgeIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Fridge.png"));
+    	ImageIcon sinkIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Sink.png"));
+    	ImageIcon toiletIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Toilet.png"));
+    	ImageIcon leftDoorIcon = new ImageIcon(getClass().getClassLoader().getResource("images/DoorLeft.png"));
+    	ImageIcon rightDoorIcon = new ImageIcon(getClass().getClassLoader().getResource("images/DoorRight.png"));
+    	ImageIcon tableIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Table.png"));
+    	ImageIcon bedIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Bed.png"));
+    	ImageIcon showerIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Shower.png"));
+    	ImageIcon stoveIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Stove.png"));
+    	ImageIcon bathIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Bath.png"));
+    	ImageIcon lineIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Line.png"));
+    	ImageIcon circleIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Circle.png"));
+    	ImageIcon rectangleIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Rectangle.png"));
+    	ImageIcon triangleIcon = new ImageIcon(getClass().getClassLoader().getResource("images/Triangle.png"));
+        // Main panel to hold everything
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 
-        return palette;
+        // Panel for Furniture
+        JPanel furniturePanel = new JPanel(new GridLayout(0, 2));
+        furniturePanel.setBorder(BorderFactory.createTitledBorder("Furniture"));
+
+        // Using the helper method to create buttons with icons and text
+        createButtonWithIconAndText(furniturePanel, "Fridge", fridgeIcon, ElementType.FRIDGE);
+        createButtonWithIconAndText(furniturePanel, "Sink", sinkIcon, ElementType.SINK);
+        createButtonWithIconAndText(furniturePanel, "Toilet", toiletIcon, ElementType.TOILET);
+        createButtonWithIconAndText(furniturePanel, "Door Right", rightDoorIcon, ElementType.DOORREVERSE);
+        createButtonWithIconAndText(furniturePanel, "Door Left", leftDoorIcon, ElementType.DOOR);
+        createButtonWithIconAndText(furniturePanel, "Table", tableIcon, ElementType.TABLE);
+        createButtonWithIconAndText(furniturePanel, "Bed", bedIcon, ElementType.BED);
+        createButtonWithIconAndText(furniturePanel, "Shower", showerIcon, ElementType.SHOWER);
+        createButtonWithIconAndText(furniturePanel, "Stove", stoveIcon, ElementType.STOVE);
+        createButtonWithIconAndText(furniturePanel, "Bathtub", bathIcon, ElementType.BATHTUB);
+
+        // Panel for Shapes
+        JPanel shapesPanel = new JPanel(new GridLayout(0, 2));
+        shapesPanel.setBorder(BorderFactory.createTitledBorder("Shapes"));
+
+        // Using the helper method to create buttons with icons and text for shapes
+        createButtonWithIconAndText(shapesPanel, "Circle", circleIcon, ElementType.CIRCLE);
+        createButtonWithIconAndText(shapesPanel, "Triangle", triangleIcon, ElementType.TRIANGLE);
+        createButtonWithIconAndText(shapesPanel, "Rectangle", rectangleIcon, ElementType.RECTANGLE);
+        createButtonWithIconAndText(shapesPanel, "Line", lineIcon, ElementType.LINE);
+
+        // Add subpanels to the main panel
+        mainPanel.add(furniturePanel);
+        mainPanel.add(shapesPanel);
+
+        // Wrap the main panel inside a scroll pane
+        JScrollPane scrollPane = new JScrollPane(mainPanel);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        return scrollPane;
     }
 
-    // Method for creating the top toolbar
+    private void createButtonWithIconAndText(JPanel panel, String text, ImageIcon icon, ElementType elementType) {
+        JButton button = new JButton(text, icon);
+        button.addActionListener(e -> currentElement = elementType);
+        button.setHorizontalTextPosition(JButton.CENTER);
+        button.setVerticalTextPosition(JButton.BOTTOM);
+        button.setToolTipText(text); // Set the tooltip as the text
+        panel.add(button);
+    }
+
+    private void addToolButton(JPanel panel, String label, ElementType elementType) {
+        addToolButton(panel, label, elementType, () -> currentElement = elementType);
+    }
+
+    private void addToolButton(JPanel panel, String label, ElementType elementType, Runnable action) {
+        JButton button = new JButton(label);
+        button.addActionListener(e -> action.run());
+        panel.add(button);
+    }
+    private JPanel createTopPanel() {
+        // Main top panel using BorderLayout
+        JPanel topPanel = new JPanel(new BorderLayout());
+
+        // Create the toolbar and add it to the left of the top panel
+        JToolBar topToolBar = createTopToolBar();
+        topPanel.add(topToolBar, BorderLayout.WEST); // Add the toolbar on the left side
+
+        // Create an actions panel for the action buttons
+        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER)); // Use FlowLayout for center alignment
+        actionsPanel.setBorder(BorderFactory.createTitledBorder("Actions"));
+        addToolButton(actionsPanel, "Rotate", ElementType.ROTATE);
+        addToolButton(actionsPanel, "Move", ElementType.MOVE);
+        addToolButton(actionsPanel, "Delete", ElementType.DELETE);
+        addToolButton(actionsPanel, "Line Thickness", null, () -> {
+            // Line Thickness logic
+            String thicknessValue = JOptionPane.showInputDialog(this, "Enter line thickness:", "Line Thickness", JOptionPane.PLAIN_MESSAGE);
+            try {
+                thickness = Integer.parseInt(thicknessValue);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Please enter a valid number for the thickness.", "Invalid Thickness", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Add the actions panel to the center of the top panel
+        topPanel.add(actionsPanel, BorderLayout.CENTER);
+
+        return topPanel;
+    }
+
+
     private JToolBar createTopToolBar() {
         JToolBar toolBar = new JToolBar();
 
-        // Example of adding a button to the toolbar
-        JButton saveButton = new JButton("Save");
-        saveButton.addActionListener(e -> {
-            // Action for saving the design
+        addButtonToToolBar(toolBar, "Save", () -> {
+            JFileChooser fileChooser = new JFileChooser();
+            if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+                File file = fileChooser.getSelectedFile();
+                saveDrawingToFile(drawingArea.getShapes(), file.getAbsolutePath());
+            }
         });
-        toolBar.add(saveButton);
-
-        JButton loadButton = new JButton("Load");
-        loadButton.addActionListener(e -> {
-            // Action for loading a design
-        });
-        toolBar.add(loadButton);
-
-        // Add more buttons as needed...
-
+        addButtonToToolBar(toolBar, "Load", () -> {
+            JFileChooser fileChooser = new JFileChooser();
+            if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                File file = fileChooser.getSelectedFile();
+                List<Shape> shapes = loadDrawingFromFile(file.getAbsolutePath());
+                if (shapes != null) {
+                    loadDrawing(shapes);
+                }
+            }        });
+        // Add more toolbar buttons as needed
         return toolBar;
     }
 
-   
+    private void addButtonToToolBar(JToolBar toolBar, String label, Runnable action) {
+        JButton button = new JButton(label);
+        button.addActionListener(e -> action.run());
+        toolBar.add(button);
+    }
+
+    public void saveDrawingToFile(List<Shape> shapes, String filename) {
+        try (FileOutputStream fileOut = new FileOutputStream(filename);
+             ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
+            out.writeObject(shapes);
+            System.out.println("Drawing saved to " + filename);
+        } catch (IOException i) {
+            i.printStackTrace();
+        }
+    }
+    public List<Shape> loadDrawingFromFile(String filename) {
+        List<Shape> loadedShapes = null;
+        try (FileInputStream fileIn = new FileInputStream(filename);
+             ObjectInputStream in = new ObjectInputStream(fileIn)) {
+            loadedShapes = (List<Shape>) in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return loadedShapes;
+    }
+    public void loadDrawing(List<Shape> shapes) {
+        drawingArea.clear(); // Implement a method to clear the current drawing
+        drawingArea.addShapes(shapes); // Implement a method to add a list of shapes to the drawing
+        drawingArea.repaint();
+    }
+  
     class DrawingArea extends JPanel {
+        private static final long serialVersionUID = 1L; // Recommended for Serializable classes
+
         private List<Shape> shapes = new ArrayList<>();
         private Point startPoint = null;
         private Rectangle selectionRect = null;
@@ -160,6 +275,17 @@ public class App extends JFrame {
         private boolean resizing = false; // Flag to indicate a resize operation is in progress
         private Shape resizingShape = null; // The shape being resized
         private Point resizeStartPoint = null; // The 
+        public void clear() {
+       	 shapes.clear(); // Clear the list of shapes
+            repaint(); // Repaint to update the display
+       }
+       public List<Shape> getShapes() {
+			return shapes;
+		}
+	public void addShapes(List<Shape> newShapes) {
+       	   shapes.addAll(newShapes); // Add all new shapes to the list
+              repaint(); // Repaint to update the display
+       }
         public DrawingArea() {
             setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
             setBackground(Color.WHITE);
@@ -233,38 +359,86 @@ public class App extends JFrame {
                     	else {
                         switch (currentElement) {
                             case SMALL_WALL:
-                                shapes.add(new Wall(x, y, x + 50, y, 4)); // Adjusted for zoom
+                                shapes.add(new Wall(x, y, x + 100, y, 4, Color.BLACK)); // Adjusted for zoom
                                 break;
                             case MEDIUM_WALL:
-                                shapes.add(new Wall(x, y, x + 100, y, 4)); // Adjusted for zoom
+                                shapes.add(new Wall(x, y, x + 200, y, 4, Color.BLACK)); // Adjusted for zoom
                                 break;
                             case LARGE_WALL:
-                                shapes.add(new Wall(x, y, x + 150, y, 4)); // Adjusted for zoom
+                                shapes.add(new Wall(x, y, x + 300, y, 4, Color.BLACK)); // Adjusted for zoom
                                 break;
                             case WALL:
-                                shapes.add(new Wall(x, y, x, y, 4)); // Adjusted for zoom, start a new resizable wall
+                                shapes.add(new Wall(x, y, x, y, 4, Color.BLACK)); // Adjusted for zoom, start a new resizable wall
+                                break;
+                            case OPENING:
+                                shapes.add(new Wall(x, y, x + 50, y, 6, Color.WHITE)); // Adjusted for zoom, start a new resizable wall
+                                break;
+                            case VERTICAL_OPENING:
+                                shapes.add(new Wall(x, y, x, y + 50, 6, Color.WHITE)); // Adjusted for zoom, start a new resizable wall
+                                break;
+                            case OPENING_CUSTOM:
+                                shapes.add(new Wall(x, y, x, y, 6, Color.WHITE)); // Adjusted for zoom, start a new resizable wall
                                 break;
                             case CIRCLE:
-                                shapes.add(new Circle(x, y, 0)); // Adjusted for zoom, start a new circle
+                                shapes.add(new Circle(x, y, 0, thickness)); // Adjusted for zoom, start a new circle
                                 break;
                             case DELETE:
                                 selectionRect = new Rectangle(x, y, 0, 0); // Adjusted for zoom
                                 break;
                             case VERTICAL_SMALL_WALL:
-                                shapes.add(new Wall(x, y, x, y + 50, 4)); // Adjusted for zoom, 50 pixels high for small vertical wall
+                                shapes.add(new Wall(x, y, x, y + 100, 4, Color.BLACK)); // Adjusted for zoom, 50 pixels high for small vertical wall
                                 break;
                             case VERTICAL_MEDIUM_WALL:
-                                shapes.add(new Wall(x, y, x, y + 100, 4)); // Adjusted for zoom, 100 pixels high for medium vertical wall
+                                shapes.add(new Wall(x, y, x, y + 200, 4, Color.BLACK)); // Adjusted for zoom, 100 pixels high for medium vertical wall
                                 break;
                             case VERTICAL_LARGE_WALL:
-                                shapes.add(new Wall(x, y, x, y + 150, 4)); // Adjusted for zoom, 150 pixels high for large vertical wall
+                                shapes.add(new Wall(x, y, x, y + 300, 4, Color.BLACK)); // Adjusted for zoom, 150 pixels high for large vertical wall
                                 break;
                             case TRIANGLE:
-                                shapes.add(new Triangle(x, y, 0)); // Adjusted for zoom, start a new triangle
+                                shapes.add(new Triangle(x, y, 0, thickness)); // Adjusted for zoom, start a new triangle
                                 break;  
                             case RECTANGLE:
-                                shapes.add(new RectangleShape(x, y, 0, 0)); // Adjusted for zoom, start a new triangle
+                                shapes.add(new RectangleShape(x, y, 0, 0, thickness)); // Adjusted for zoom, start a new triangle
                                 break;  
+                            case ROOM:
+                                shapes.add(new RectangleShape(x, y, 0, 0, 4)); // Adjusted for zoom, start a new triangle
+                                break;  
+                            case COUCH:
+                            	shapes.add(new Couch(x,y,70,50));
+                            	break;
+                            case TABLE:
+                            	shapes.add(new Table(x,y,70,70));
+                            	break;
+                            case BED:
+                            	shapes.add(new Bed(x,y,100,120));
+                            	break;
+                            case DOOR:
+                            	shapes.add(new Door(x,y,55,40));
+                            	break;
+                            case DOORREVERSE:
+                            	shapes.add(new ReverseDoor(x,y,55,40));
+                            	break;
+                            case TOILET:
+                            	shapes.add(new Toilet(x,y,40,75));
+                            	break;
+                            case BATHTUB:
+                            	shapes.add(new Bathtub(x,y,50,85));
+                            	break;
+                            case SINK:
+                            	shapes.add(new Sink(x,y,40,50));
+                            	break;
+                            case STOVE:
+                            	shapes.add(new Stove(x,y, 70,60));
+                            	break;
+                            case FRIDGE:
+                            	shapes.add(new Fridge(x,y,60,70));
+                            	break;
+                            case SHOWER:
+                            	shapes.add(new Shower(x,y,60,70));
+                            	break;
+                            case LINE:
+                                shapes.add(new Wall(x, y, x, y, thickness, Color.BLACK)); // Adjusted for zoom, start a new resizable wall
+                                break;
                             default:
                                 break;
                         }
@@ -284,9 +458,16 @@ public class App extends JFrame {
                         shapes.removeIf(shape -> shape instanceof Wall && selectionRect.intersectsLine(((Wall) shape).x1, ((Wall) shape).y1, ((Wall) shape).x2, ((Wall) shape).y2));
                         shapes.removeIf(shape -> shape instanceof Circle && selectionRect.contains(((Circle) shape).x, ((Circle) shape).y));
                         shapes.removeIf(shape -> shape instanceof Triangle && selectionRect.contains(((Triangle) shape).x, ((Triangle) shape).y));
+                        shapes.removeIf(shape -> shape instanceof RectangleShape && selectionRect.contains(((RectangleShape) shape).x, ((RectangleShape) shape).y));
+                        shapes.removeIf(shape -> shape instanceof FurnitureItem && selectionRect.contains(((FurnitureItem) shape).x, ((FurnitureItem) shape).y));
 
                         selectionRect = null;
                         repaint();
+                    }
+                    else if (startPoint != null) {
+                        // This is where a shape was just added
+                        // Switch to MOVE mode after adding a shape
+                        currentElement = ElementType.MOVE;
                     }
                     startPoint = null;
                 }
@@ -315,7 +496,7 @@ public class App extends JFrame {
 
                         initialClickPoint = currentPoint; // Update initial point for continuous rotation
                         repaint();
-                    } else if (currentElement == ElementType.RECTANGLE && startPoint != null && !shapes.isEmpty()) {
+                    } else if (((currentElement == ElementType.RECTANGLE)||(currentElement == ElementType.ROOM))  && startPoint != null && !shapes.isEmpty()) {
                         // Get the last shape added, which should be the rectangle being drawn
                         Shape lastShape = shapes.get(shapes.size() - 1);
 
@@ -342,8 +523,19 @@ public class App extends JFrame {
                         // Calculate the radius based on the distance between startPoint and currentPoint
                         lastCircle.setRadius((int) startPoint.distance(x, y));
                         repaint();
-                    } else if (currentElement == ElementType.WALL && startPoint != null) {
+                    } else if ((currentElement == ElementType.WALL || currentElement == ElementType.LINE)  && startPoint != null) {
                         Wall lastWall = (Wall) shapes.get(shapes.size() - 1);
+
+                        // Adjust the mouse event coordinates for zoom and translation
+                        int adjustedX = (int) ((e.getX() - translateX) / zoomFactor);
+                        int adjustedY = (int) ((e.getY() - translateY) / zoomFactor);
+
+                        lastWall.x2 = adjustedX;
+                        lastWall.y2 = adjustedY;
+                        repaint();
+                    }
+                    else if (currentElement == ElementType.OPENING_CUSTOM && startPoint != null) {
+                    	Wall lastWall = (Wall) shapes.get(shapes.size() - 1);
 
                         // Adjust the mouse event coordinates for zoom and translation
                         int adjustedX = (int) ((e.getX() - translateX) / zoomFactor);
@@ -407,59 +599,99 @@ public class App extends JFrame {
             super.paintComponent(g);
             Graphics2D g2d = (Graphics2D) g;
 
-            // Apply translation
+            applyTransformations(g2d);
+            drawGrid(g2d);
+            drawShapes(g2d);
+            drawSelectionIndicatorIfNeeded(g2d);
+            // Display the lengths of the sides of the selected rectangle
+            if (selectedShape instanceof Wall) {
+                Wall selectedWall = (Wall) selectedShape;
+                double length = calculateWallLength(selectedWall);
+                String lengthText = String.format("%.2f feet", length / 20); // Length calculation remains the same
+
+                // Calculate the midpoint of the wall for text placement without zoom adjustment for length
+                int midX = (selectedWall.x1 + selectedWall.x2) / 2;
+                int midY = (selectedWall.y1 + selectedWall.y2) / 2;
+
+                // Adjust only the position (midX, midY) for zoom and translation to correctly place the text
+                midX = (int) (midX * zoomFactor + translateX);
+                midY = (int) (midY * zoomFactor + translateY);
+
+                g2d.setColor(Color.RED); // Set text color
+                g2d.drawString(lengthText, midX, midY); // Draw length near the wall
+            }
+            if (selectedShape instanceof RectangleShape) {
+                RectangleShape selectedRectangle = (RectangleShape) selectedShape;
+                int width = selectedRectangle.width;
+                int height = selectedRectangle.height;
+
+                // Calculate lengths adjusted for zoom
+                String widthText = String.format("%.2f feet", (width/20.0));
+                String heightText = String.format("%.2f feet", (height/20.0));
+
+                // Calculate midpoints for text placement
+                int midX = selectedRectangle.x + width / 2;
+                int midY = selectedRectangle.y + height / 2;
+
+                // Adjust for zoom and translation
+                midX = (int) (midX * zoomFactor + translateX);
+                midY = (int) (midY * zoomFactor + translateY);
+
+                g2d.setColor(Color.RED); // Set text color
+
+                // Draw length texts near the sides, adjust positions as needed
+                g2d.drawString(widthText, midX, selectedRectangle.y - 5); // Top side
+                g2d.drawString(widthText, midX, selectedRectangle.y + height + 15); // Bottom side
+                g2d.drawString(heightText, selectedRectangle.x - 40, midY); // Left side
+                g2d.drawString(heightText, selectedRectangle.x + width + 5, midY); // Right side
+            }
+            g2d.setTransform(new AffineTransform()); // This line resets all prior transformations
+
+            drawRuler(g2d);
+
+        }
+
+        private void applyTransformations(Graphics2D g2d) {
+            // Apply translation and then zoom
             g2d.translate(translateX, translateY);
-
-            // Then apply zoom
             g2d.scale(zoomFactor, zoomFactor);
+        }
 
-            // Set the color for the grid
+        private void drawGrid(Graphics2D g2d) {
             g2d.setColor(Color.LIGHT_GRAY);
-
-            // Determine the size of each cell in the grid
             int gridSize = 25;
-
-            // Calculate the bounds of the visible area considering translation and zoom
             int visibleLeft = (int) (-translateX / zoomFactor);
             int visibleTop = (int) (-translateY / zoomFactor);
             int visibleRight = (int) ((getWidth() - translateX) / zoomFactor);
             int visibleBottom = (int) ((getHeight() - translateY) / zoomFactor);
 
-            // Draw the vertical lines of the grid over the visible area
+            // Vertical lines
             for (int i = visibleLeft - (visibleLeft % gridSize); i <= visibleRight; i += gridSize) {
                 g2d.drawLine(i, visibleTop, i, visibleBottom);
             }
-
-            // Draw the horizontal lines of the grid over the visible area
+            // Horizontal lines
             for (int i = visibleTop - (visibleTop % gridSize); i <= visibleBottom; i += gridSize) {
                 g2d.drawLine(visibleLeft, i, visibleRight, i);
             }
+        }
 
-            // Now draw the shapes on top of the grid as before
+        private void drawShapes(Graphics2D g2d) {
             for (Shape shape : shapes) {
-                if (shape instanceof Wall) {
-                    ((Wall) shape).draw(g2d, zoomFactor );
-                } else if (shape instanceof Circle) {
-                    ((Circle) shape).draw(g2d);
-                }
-                if (shape instanceof Triangle) {
-                    ((Triangle) shape).draw(g2d);
-                }
-                if (shape instanceof RectangleShape) {
-                    ((RectangleShape) shape).draw(g2d);
-                }
+                shape.draw(g2d); // Assuming each shape knows how to draw itself
             }
+        }
+
+        private void drawSelectionIndicatorIfNeeded(Graphics2D g2d) {
             if (selectedShape != null) {
-                double rotationAngle = selectedShape.getRotationAngle(); // Assuming your shapes have a method to get their current rotation angle
-                drawSelectionIndicator(g2d, selectedShape, rotationAngle); // Pass the rotation angle to your method
+                double rotationAngle = selectedShape.getRotationAngle();
+                drawSelectionIndicator(g2d, selectedShape, rotationAngle);
             }
-            
-            // Draw the selection rectangle if it's not null
             if (selectionRect != null) {
                 g2d.setColor(Color.BLUE);
                 g2d.draw(selectionRect);
             }
         }
+
         
         private void drawSelectionIndicator(Graphics2D g2d, Shape selectedShape, double angle) {
             // Scale the handle size based on the zoom factor
@@ -616,6 +848,39 @@ public class App extends JFrame {
 
         return Cursor.getDefaultCursor(); // Return the default cursor if the mouse isn't over a handle
     }
+    private double calculateWallLength(Wall wall) {
+        return Point2D.distance(wall.x1, wall.y1, wall.x2, wall.y2); // Adjust for zoom
+    }
 
-}
+    private void drawRuler(Graphics2D g2d) {
+        int rulerLengthPixels = 20; // Length of each ruler segment, adjust based on your scale
+        int rulerUnits = 10; // Distance between labels on the ruler
+        g2d.setStroke(new BasicStroke(2));
+        g2d.setColor(Color.BLACK); // Set the color to black for the outlines
+        // Draw top ruler
+        for (int i = 0; i < getWidth(); i += rulerLengthPixels) {
+            // Draw a small line for each unit
+            g2d.drawLine(i, 0, i, 5);
+
+            // Label every 'rulerUnits' units
+            if ((i / rulerLengthPixels) % rulerUnits == 0) {
+                String label = String.valueOf(i / rulerLengthPixels);
+                g2d.drawString(label, i, 15);
+            }
+        }
+
+        // Draw left ruler
+        for (int i = 0; i < getHeight(); i += rulerLengthPixels) {
+            // Draw a small line for each unit
+            g2d.drawLine(0, i, 5, i);
+
+            // Label every 'rulerUnits' units
+            if ((i / rulerLengthPixels) % rulerUnits == 0) {
+                String label = String.valueOf(i / rulerLengthPixels);
+                g2d.drawString(label, 5, i + 5);
+            }
+        }
+    }
+
+    }
 }

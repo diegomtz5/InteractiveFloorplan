@@ -8,18 +8,22 @@ import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.io.Serializable;
 
-class Wall implements Shape {
+class Wall implements Shape, Serializable{
+    private static final long serialVersionUID = 1L; // Recommended for Serializable classes
+
     int x1, y1, x2, y2, thickness;
     Color color = Color.BLACK; // Default color, can be changed as needed
     private double rotationAngle = 0; // Degrees
 
-    public Wall(int x1, int y1, int x2, int y2, int thickness) {
+    public Wall(int x1, int y1, int x2, int y2, int thickness, Color color) {
         this.x1 = x1;
         this.y1 = y1;
         this.x2 = x2;
         this.y2 = y2;
         this.thickness = thickness;
+        this.color = color;
     }
 
     public boolean contains(Point p, double zoomFactor) {
@@ -48,7 +52,7 @@ class Wall implements Shape {
 
 	}
 
-    public void draw(Graphics2D g2d, double zoomFactor) {
+    public void draw(Graphics2D g2d) {
     	  // Calculate midpoint for the rotation pivot
         int midX = (x1 + x2) / 2;
         int midY = (y1 + y2) / 2;
@@ -60,7 +64,7 @@ class Wall implements Shape {
         g2d.rotate(Math.toRadians(rotationAngle), midX, midY);
 
         // Set color and stroke for drawing
-        int scaledThickness = (int) Math.max(1, thickness * zoomFactor); // Ensure at least 1px thickness
+        int scaledThickness = (int) Math.max(1, thickness); // Ensure at least 1px thickness
         g2d.setColor(color);
         g2d.setStroke(new BasicStroke(scaledThickness, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
@@ -113,7 +117,7 @@ class Wall implements Shape {
         int yMax = Math.max(y1, y2);
         int extra = thickness / 2;
         return new Rectangle(xMin - extra, yMin - extra, (xMax - xMin) + thickness, (yMax - yMin) + thickness);
-    }
+}
     public Rectangle getBounds() {
         // Calculate the minimum and maximum coordinates, accounting for the thickness of the wall
         int xMin = Math.min(x1, x2) - thickness / 2;

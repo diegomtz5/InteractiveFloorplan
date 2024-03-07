@@ -9,17 +9,22 @@ import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.io.Serializable;
 
-class RectangleShape implements Shape {
+class RectangleShape implements Shape, Serializable {
+    private static final long serialVersionUID = 1L; // Recommended for Serializable classes
+
     int x, y, width, height;
     Color color = Color.BLACK; // Default color
     private double rotationAngle = 0; // Rotation angle in degrees
+    private float strokeThickness = 4.0f; // Default stroke thickness
 
-    public RectangleShape(int x, int y, int width, int height) {
+    public RectangleShape(int x, int y, int width, int height, float Thickness) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+        this.strokeThickness = Thickness;
     }
 
     public void setColor(Color color) {
@@ -49,7 +54,7 @@ class RectangleShape implements Shape {
         g2d.transform(transform);
 
         // Set the stroke for the rectangle to be thin
-        g2d.setStroke(new BasicStroke(1));
+        g2d.setStroke(new BasicStroke(strokeThickness));
 
         // Draw the rectangle
         g2d.drawRect(x, y, width, height);
@@ -61,7 +66,6 @@ class RectangleShape implements Shape {
 
     public boolean contains(Point p, double zoomFactor) {
         // Create an AffineTransform for the inverse rotation
-        // The rotation needs to be around the center of the rectangle
         double centerX = x + width / 2.0;
         double centerY = y + height / 2.0;
         AffineTransform inverseTransform = AffineTransform.getRotateInstance(
@@ -74,15 +78,22 @@ class RectangleShape implements Shape {
         Point2D.Double dst = new Point2D.Double();
         inverseTransform.transform(src, dst);
 
-        // Now check if the transformed point is inside the non-rotated, zoom-adjusted rectangle
-        // The rectangle's bounds need to be adjusted for the zoom as well
-        Rectangle zoomedRect = new Rectangle(
-            (int) (x / zoomFactor),
-            (int) (y / zoomFactor),
-            (int) (width / zoomFactor),
-            (int) (height / zoomFactor));
+        // Define a small tolerance value for detecting points "on" the line
+        double tolerance = strokeThickness / zoomFactor; // Adjusted for zoom
 
-        return zoomedRect.contains(dst);
+        // Check if the point is near the edges of the rectangle, considering the tolerance
+        boolean nearLeftOrRightEdge = Math.abs(dst.x - (x / zoomFactor)) <= tolerance || 
+                                       Math.abs(dst.x - ((x + width) / zoomFactor)) <= tolerance;
+        boolean nearTopOrBottomEdge = Math.abs(dst.y - (y / zoomFactor)) <= tolerance || 
+                                      Math.abs(dst.y - ((y + height) / zoomFactor)) <= tolerance;
+        
+        // Check if the point is within the vertical bounds of the rectangle sides
+        boolean withinVerticalBounds = dst.y >= (y / zoomFactor) && dst.y <= ((y + height) / zoomFactor);
+        
+        // Check if the point is within the horizontal bounds of the rectangle top and bottom
+        boolean withinHorizontalBounds = dst.x >= (x / zoomFactor) && dst.x <= ((x + width) / zoomFactor);
+
+        return (nearLeftOrRightEdge && withinVerticalBounds) || (nearTopOrBottomEdge && withinHorizontalBounds);
     }
 
 
@@ -111,4 +122,13 @@ class RectangleShape implements Shape {
     public double getRotationAngle() {
         return rotationAngle;
     }
+
+	public void setX(int newX) {
+		// TODO Auto-generated method stub
+		this.x = newX;
+	}
+	public void setY(int newY) {
+		// TODO Auto-generated method stub
+		this.x = newY;
+	}
 }

@@ -7,13 +7,17 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
+import java.io.Serializable;
 
-class Circle implements Shape {
+class Circle implements Shape, Serializable{
+    private static final long serialVersionUID = 1L; // Recommended for Serializable classes
+
     int x, y, radius;
     Color color = Color.BLACK; // Default color
     private double rotationAngle = 0; // Rotation angle in degrees
-
-    public Circle(int x, int y, int radius) {
+    private int thickness = 0;
+    public Circle(int x, int y, int radius, int thickness) {
+    	this.thickness = thickness;
         this.x = x;
         this.y = y;
         this.radius = radius;
@@ -45,7 +49,7 @@ class Circle implements Shape {
         g2d.transform(transform);
 
         // Set the stroke for the circle to be thin
-        g2d.setStroke(new BasicStroke(1)); // Set the thickness for the circle
+        g2d.setStroke(new BasicStroke(thickness)); // Set the thickness for the circle
 
         // Draw the circle (or any oriented feature on the circle)
         g2d.drawOval(x - radius, y - radius, 2 * radius, 2 * radius);

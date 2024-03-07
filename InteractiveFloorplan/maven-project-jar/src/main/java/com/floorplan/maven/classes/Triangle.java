@@ -1,20 +1,26 @@
 package com.floorplan.maven.classes;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
+import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
+import java.io.Serializable;
 
-class Triangle implements Shape {
+class Triangle implements Shape, Serializable {
+    private static final long serialVersionUID = 1L; // Recommended for Serializable classes
+
     int x, y; // Center point
     int side; // Length of each side
     Color color = Color.BLACK; // Default color
     private double rotationAngle = 0; // Rotation angle in degrees
-
-    public Triangle(int x, int y, int side) {
+    private int thickness = 0;
+    public Triangle(int x, int y, int side, int thickness) {
+    	this.thickness = thickness;
         this.x = x;
         this.y = y;
         this.side = side;
@@ -34,6 +40,10 @@ class Triangle implements Shape {
         // Save the current transform of the graphics context
         AffineTransform originalTransform = g2d.getTransform();
 
+        // Set the stroke with the specified thickness
+        Stroke originalStroke = g2d.getStroke(); // Save original stroke
+        g2d.setStroke(new BasicStroke(thickness));
+
         // Translate and rotate the graphics context to the center of the triangle and apply rotation
         g2d.translate(x, y);
         g2d.rotate(Math.toRadians(rotationAngle));
@@ -46,9 +56,11 @@ class Triangle implements Shape {
         // Draw the triangle
         g2d.drawPolygon(xPoints, yPoints, 3);
 
-        // Restore the original transform to not affect subsequent drawing
+        // Restore the original stroke and transform to not affect subsequent drawing
+        g2d.setStroke(originalStroke);
         g2d.setTransform(originalTransform);
     }
+
 
     public void setSide(int side) {
         this.side = side;

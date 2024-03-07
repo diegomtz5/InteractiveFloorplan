@@ -1,9 +1,10 @@
 package com.floorplan.maven.classes;
 
+import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
 
-public interface Shape {
+public interface Shape  {
 
     public Rectangle getBounds();
 
@@ -14,4 +15,6 @@ public interface Shape {
 	void rotate(double angle);
 	void resize(int x, int y);
 	double getRotationAngle();
+
+	public void draw(Graphics2D g2d);
 }
