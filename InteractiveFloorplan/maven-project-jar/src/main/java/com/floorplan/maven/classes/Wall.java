@@ -10,7 +10,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.io.Serializable;
 
-class Wall implements Shape, Serializable{
+class Wall implements Shape, Serializable {
     private static final long serialVersionUID = 1L; // Recommended for Serializable classes
 
     int x1, y1, x2, y2, thickness;
